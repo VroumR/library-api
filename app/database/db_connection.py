@@ -1,4 +1,6 @@
 import mysql.connector
+from contextlib import contextmanager
+
 
 class GetConnection : 
     def __init__(self):
@@ -8,6 +10,7 @@ class GetConnection :
             password="oldbook",
             port= "3307"
         )
+
 
     def create_database(self):
 
@@ -59,10 +62,30 @@ class GetConnection :
             """
         )
 
+        self.cursor.close()
+        self.conn.close()
+
+
+    def close(self):
+        self.cursor.close()
+        self.conn.close()
 
     def setup(self):
         self.create_database()
         self.create_table()
 
+    @contextmanager #import from contextlib import contextmanager, you don't want to use async
+    def get_cursor(self, dictionary=True): #if you want to not receive ditc enter dictionary= False ; example with db.get_cursor(dictionary=False) as cursor :
+        conn = self.get_connection() #connection
+        cursor = conn.cursor(dictionary=dictionary, buffered=True) #buffered is not obligatory , just in case
 
+        try : 
+            yield cursor # as cursor start here ... cursor.execute(..)
+            conn.commit() # if you just get and not modify is don't care , if you want to create if commit you can 
+        except Exception: 
+            conn.rollback() # RETURN BACK IF ERROR AND DON'T COMMIT 
+            raise
+        finally:
+            cursor.close # close cursor ...
+            conn.close() #same you understand 
     
